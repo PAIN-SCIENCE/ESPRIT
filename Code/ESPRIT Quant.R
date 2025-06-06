@@ -132,7 +132,7 @@ sd(baseline_wide$intensity, na.rm = TRUE)
 
 print(baseline_wide$ids)
 
-#46 accidentally entered 67 accidentally put in 2002 years, I think she meant that it started in 2002 so 
+#Record ID 67 accidentally put in 2002 years, I think she meant that it started in 2002 so 
 #I will put 23 years 
 bp_hist <- baseline_wide %>% 
   slice(-46)
@@ -244,7 +244,7 @@ ESPRIT_full <- ESPRIT_full %>%
 
 
 #Creating a _num version of PROMIS variables so we can keep both the character version and the numeric
-#version of the variable 
+#version of the variable. Will do that for other variables as well
 col_name_num <- function(df, column_prefix, suffix="_num"){
   df %>% 
     mutate(across(starts_with(column_prefix), .names = paste0("{col}", suffix)))
