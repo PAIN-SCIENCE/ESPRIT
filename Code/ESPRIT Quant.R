@@ -706,10 +706,6 @@ summary_func(bl_post_wide$intensity_Baseline, bl_post_wide$`intensity_2 month fo
              bl_post_wide$`intensity_4 month follow-up`, bl_post_wide$intensity_change_2month, 
              bl_post_wide$intensity_change_4month)
 
-#Pain intensity change by group
-summary(Group1$intensity_change_2month)
-
-summary(Group2$intensity_change_2month)
 
 #PROMIS Global Health post-treatment
 summary_func(bl_post_wide$promis_global01_num_Baseline, bl_post_wide$`promis_global01_num_2 month follow-up`, 
@@ -875,6 +871,8 @@ ESPRIT_mixed$promis_physical_z
 promis_physical <- lmer(promis_physical_z ~ timepoint + fg_change +  timepoint*fg_change + 
                           (1|cohort:ids), data = ESPRIT_mixed)
 summary(promis_physical)
+
+confint(promis_physical)
 
 #PROMIS Mental 
 ESPRIT_mixed$promis_mental_z
