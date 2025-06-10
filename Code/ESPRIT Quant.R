@@ -134,14 +134,10 @@ print(baseline_wide$ids)
 
 #Record ID 67 accidentally put in 2002 years, I think she meant that it started in 2002 so 
 #I will put 23 years 
-bp_hist <- baseline_wide %>% 
-  slice(-46)
-
-summary(bp_hist$bp_history)
-
 baseline_wide$bp_history[baseline_wide$bp_history == 2002] <- 23 
 
 summary(baseline_wide$bp_history)
+sd(baseline_wide$bp_history, na.rm=TRUE)
 
 
 #Creating cohort and cohort grouping variables
