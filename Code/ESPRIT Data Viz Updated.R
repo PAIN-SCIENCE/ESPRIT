@@ -576,7 +576,7 @@ line_function <- function(data, ylab="", title="", legend_pos = ""){
     ) +  
     scale_x_continuous(
       breaks = 1:3,
-      labels=c("Baseline", "PT", "FU")
+      labels=c("Baseline", "Post-tx", "FU")
     )
 }
 
@@ -584,6 +584,8 @@ line_function <- function(data, ylab="", title="", legend_pos = ""){
 peg_df <- summary_df(bl_post, peg)
 
 peg_line <- line_function(peg_df, "PEG Score", "", "right")
+
+print(peg_line)
 
 
 ###----------------------------------------------------------------------------
@@ -670,6 +672,12 @@ print(combined_primary)
 
 combined_secondary <- depression_line + promis_physical_line + brainattr_line + strattr_line +
   promis_quality_line + engagement_line + plot_annotation(tag_levels = 'A') +
-  plot_layout(nrow=2)
+  plot_layout(ncol = 3, nrow = 2) &  # & applies theme to all plots
+  theme(
+    text = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    strip.text = element_text(size = 11)
+  )
 
-print(combined_secondary)
+ggsave("Figure 2.pdf", width =12, height = 8, dpi = 300)
+
