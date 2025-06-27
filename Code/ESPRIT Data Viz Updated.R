@@ -625,7 +625,7 @@ promis_mental_line <- line_function(promis_mental_df, "PROMIS Mental Health", ""
 #PHQ
 depression_df <- summary_df(bl_post, depression)
 
-depression_line <- line_function(depression_df, "PHQ-9", "")
+depression_line <- line_function(depression_df, "Depression", "")
 
 ###----------------------------------------------------------------------------
 #GAD
@@ -643,7 +643,7 @@ painconcern_line <- line_function(painconcern_df, "CAP-6", "")
 #Life Engagement 
 engagement_df <- summary_df(bl_post, engagement)
 
-engagement_line <- line_function(engagement_df, "LET", "")
+engagement_line <- line_function(engagement_df, "Life Engagement", "")
 ###----------------------------------------------------------------------------
 #TSK
 kinesophobia_df <- summary_df(bl_post, kinesophobia)
@@ -678,6 +678,10 @@ combined_secondary <- depression_line + promis_physical_line + brainattr_line + 
     axis.text = element_text(size = 10),
     strip.text = element_text(size = 11)
   )
+
+print(combined_secondary)
+
+getwd()
 
 ggsave("Figure 2.pdf", width =12, height = 8, dpi = 300)
 
