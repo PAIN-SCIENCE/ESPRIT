@@ -165,6 +165,18 @@ table(ESPRIT_full$cohort)
 ESPRIT_full <- ESPRIT_full %>% 
   slice(-c(1,2))
 
+#Reasons for withdrawl 
+
+withdrawn <- ESPRIT %>% 
+  rename(withdrawn = `Stop sending the participant all surveys? The participant has withdrawn or been withdrawn from the study.Selecting 'YES' will trigger the STOP of all future surveys`, 
+         reason_withdrawn = `Reason participant withdrawal`) %>% 
+  filter(withdrawn == "Yes") %>% 
+  select(withdrawn, reason_withdrawn, Comments, ids)
+
+table(withdrawn$Comments)
+
+
+
 ###-----------------------------------------------------------------------------
 #Subsetting data so it's only people who were actually in cohort (i.e. getting rid 
 #of all the people who were screened out)
@@ -554,7 +566,7 @@ bl_post_wide <- bl_post %>%
     names_from = `Event Name`,
     values_from = c(peg, promis_physical, promis_mental, 
                     promis_global01_num, promis_global02_num, kinesophobia, 
-                    opioid, depression, anxiety, engagement, painconcern, intensity, age, 
+                    opioid, depression, anxiety, engagement, painconcern, intensity, gic2a, gic2b, gic2, age, 
                     race, gender, hispanic, activity, enjoyment, edu, employ, married, shoulder_girdle_left, 
                     shoulder_girdle_right, upper_arm_left, upper_arm_right, lower_arm_left, lower_arm_right, 
                     hip_left, hip_right, upper_leg_left, upper_leg_right, lower_leg_left, lower_leg_right, 
@@ -576,7 +588,9 @@ bl_post_wide <- bl_post_wide %>%
          -`upper_leg_right_Eligibility and Consent`, -`lower_leg_left_Eligibility and Consent`, -`lower_leg_right_Eligibility and Consent`, 
          -`jaw_left_Eligibility and Consent`, -`jaw_right_Eligibility and Consent`, -`chest_Eligibility and Consent`, -`abdomen_Eligibility and Consent`,
          -`upper_back_Eligibility and Consent`, -`lower_back_Eligibility and Consent`, -`neck_Eligibility and Consent`, -`enjoyment_Eligibility and Consent`, 
-         -`activity_Eligibility and Consent`, -`WPI_Eligibility and Consent`, -`CPA_brain_Eligibility and Consent`, -`CPA_str_Eligibility and Consent`
+         -`activity_Eligibility and Consent`, -`WPI_Eligibility and Consent`, -`CPA_brain_Eligibility and Consent`, -`CPA_str_Eligibility and Consent`, 
+         -`gic2a_Eligibility and Consent`, -`gic2b_Eligibility and Consent`, -`gic2_Eligibility and Consent`, -`gic2_Baseline`, -`gic2a_Baseline`, -`gic2b_Baseline`, 
+         -`age_4 month follow-up`, -`race_4 month follow-up`, -`gender_4 month follow-up`, -`hispanic_4 month follow-up`
          
   ) %>% 
   rename(age = `age_Eligibility and Consent`,
@@ -670,325 +684,250 @@ twomonthcomplete <- bl_post_wide %>%
 fourmonthcomplete <- bl_post_wide %>% 
   drop_na(`peg_4 month follow-up`)
 
+
 ###----------------------------------------------------------------------------------------------
 #Baseline and post treatment values with change scores 
 
 #Function to print values
 summary_func <- function(a, b, c, d, e){
+  # Create a logical vector for complete cases across all variables
+  complete_cases <- complete.cases(a, b, c, d, e)
+  
   print("Baseline:")
-  print(c(summary(a), "SD" = sd(a, na.rm=TRUE)))
+  print(c(summary(a[complete_cases]), "SD" = sd(a[complete_cases], na.rm=TRUE)))
   
   print("Post Treatment:")
-  print(c(summary(b), "SD" = sd(b, na.rm=TRUE)))
+  print(c(summary(b[complete_cases]), "SD" = sd(b[complete_cases], na.rm=TRUE)))
   
   print("2-Month Follow-up:")
-  print(c(summary(c), "SD" = sd(c, na.rm=TRUE)))
+  print(c(summary(c[complete_cases]), "SD" = sd(c[complete_cases], na.rm=TRUE)))
   
   print("Change to Post-treatment:")
-  print(c(summary(d), "SD" = sd(d, na.rm=TRUE)))
+  print(c(summary(d[complete_cases]), "SD" = sd(d[complete_cases], na.rm=TRUE)))
   
   print("Change to 2-Month Follow-up:")
-  print(c(summary(e), "SD" = sd(e, na.rm=TRUE)))
+  print(c(summary(e[complete_cases]), "SD" = sd(e[complete_cases], na.rm=TRUE)))
+  
+  print(paste("Number of complete cases:", sum(complete_cases)))
 }
-
 
 #PEG
 summary_func(bl_post_wide$peg_Baseline, bl_post_wide$`peg_2 month follow-up`, 
              bl_post_wide$`peg_4 month follow-up`, bl_post_wide$peg_change_2month, 
              bl_post_wide$peg_change_4month)
 
-#Pain intensity
-summary_func(bl_post_wide$intensity_Baseline, bl_post_wide$`intensity_2 month follow-up`, 
-             bl_post_wide$`intensity_4 month follow-up`, bl_post_wide$intensity_change_2month, 
-             bl_post_wide$intensity_change_4month)
+summary(bl_post_wide$peg_change_2month)
 
+t.test(bl_post_wide$peg_change_2month, conf.level = 0.95)$conf.int
+t.test(bl_post_wide$peg_change_4month, conf.level = 0.95)$conf.int
 
 #PROMIS Global Health post-treatment
 summary_func(bl_post_wide$promis_global01_num_Baseline, bl_post_wide$`promis_global01_num_2 month follow-up`, 
              bl_post_wide$`promis_global01_num_4 month follow-up`, bl_post_wide$promis_general_change_2month,
              bl_post_wide$promis_general_change_4month)
 
+t.test(bl_post_wide$promis_general_change_2month)
+t.test(bl_post_wide$promis_general_change_4month)
+
 #PROMIS Quality of life post treatment 
 summary_func(bl_post_wide$promis_global02_num_Baseline, bl_post_wide$`promis_global02_num_2 month follow-up`,
              bl_post_wide$`promis_global02_num_4 month follow-up`, bl_post_wide$promis_quality_change_2month,
              bl_post_wide$promis_quality_change_4month)
+
+t.test(bl_post_wide$promis_quality_change_2month)
+t.test(bl_post_wide$promis_quality_change_4month)
 
 #PROMIS Physical health post treatment 
 summary_func(bl_post_wide$promis_physical_Baseline, bl_post_wide$`promis_physical_2 month follow-up`,
              bl_post_wide$`promis_physical_4 month follow-up`, bl_post_wide$promis_physical_change_2month,
              bl_post_wide$promis_physical_change_4month)
 
-
+t.test(bl_post_wide$promis_physical_change_2month)
+t.test(bl_post_wide$promis_physical_change_4month)
 
 #PROMIS mental health post-treatment
 summary_func(bl_post_wide$promis_mental_Baseline, bl_post_wide$`promis_mental_2 month follow-up`, 
         bl_post_wide$`promis_mental_4 month follow-up`, bl_post_wide$promis_mental_change_2month,
         bl_post_wide$promis_mental_change_4month)
 
+t.test(bl_post_wide$promis_mental_change_2month)
+t.test(bl_post_wide$promis_mental_change_4month)
+
 #Depression post treatment
 summary_func(bl_post_wide$depression_Baseline, bl_post_wide$`depression_2 month follow-up`, 
              bl_post_wide$`depression_4 month follow-up`, bl_post_wide$depression_change_2month, 
              bl_post_wide$depression_change_4month)
+
+t.test(bl_post_wide$depression_change_2month)
+t.test(bl_post_wide$depression_change_4month)
 
 #Anxiety post treatment
 summary_func(bl_post_wide$anxiety_Baseline, bl_post_wide$`anxiety_2 month follow-up`, 
              bl_post_wide$`anxiety_4 month follow-up`, bl_post_wide$anxiety_change_2month, 
              bl_post_wide$anxiety_change_4month)
 
+t.test(bl_post_wide$anxiety_change_2month)
+t.test(bl_post_wide$anxiety_change_4month)
+
 #Kinesophobia post treatment
 summary_func(bl_post_wide$kinesophobia_Baseline, bl_post_wide$`kinesophobia_2 month follow-up`, 
              bl_post_wide$`kinesophobia_4 month follow-up`, bl_post_wide$kinesophobia_change_2month,
              bl_post_wide$kinesophobia_change_4month)
+
+t.test(bl_post_wide$kinesophobia_change_2month)
+t.test(bl_post_wide$kinesophobia_change_4month)
 
 #Pain concern post treatment
 summary_func(bl_post_wide$painconcern_Baseline, bl_post_wide$`painconcern_2 month follow-up`, 
              bl_post_wide$`painconcern_4 month follow-up`, bl_post_wide$painconcern_change_2month,
              bl_post_wide$painconcern_change_4month)
 
+t.test(bl_post_wide$painconcern_change_2month)
+t.test(bl_post_wide$painconcern_change_4month)
+
 #Life engagement post treatment 
 summary_func(bl_post_wide$engagement_Baseline, bl_post_wide$`engagement_2 month follow-up`, 
              bl_post_wide$`engagement_4 month follow-up`, bl_post_wide$engagement_change_2month, 
              bl_post_wide$engagement_change_4month)
+
+t.test(bl_post_wide$engagement_change_2month)
+t.test(bl_post_wide$engagement_change_4month)
 
 #Pain sites post treatment
 summary_func(bl_post_wide$painsite_Baseline, bl_post_wide$painsite_2_month_followup, 
              bl_post_wide$painsite_4_month_followup, bl_post_wide$painsite_change_2_month, 
              bl_post_wide$painsite_change_4_month)
 
+t.test(bl_post_wide$painsite_change_2_month)
+t.test(bl_post_wide$painsite_change_4_month)
+
 #Symptom severity post treatment
 summary_func(bl_post_wide$WPI_Baseline, bl_post_wide$`WPI_2 month follow-up`, 
              bl_post_wide$`WPI_4 month follow-up`, bl_post_wide$WPI_change_2month, 
              bl_post_wide$WPI_change_4month)
+
+t.test(bl_post_wide$WPI_change_2month)
+t.test(bl_post_wide$WPI_change_4month)
 
 #Opioid post treatment
 summary_func(bl_post_wide$opioid_Baseline, bl_post_wide$`opioid_2 month follow-up`, 
              bl_post_wide$`opioid_4 month follow-up`, bl_post_wide$opioid_change_2month, 
              bl_post_wide$opioid_change_4month)
 
+t.test(bl_post_wide$opioid_change_2month)
+t.test(bl_post_wide$opioid_change_4month)
+
 #Structural attributions baseline
 summary_func(bl_post_wide$CPA_str_Baseline, bl_post_wide$`CPA_str_2 month follow-up`, 
              bl_post_wide$`CPA_str_4 month follow-up`, bl_post_wide$CPA_str_change_2month, 
              bl_post_wide$CPA_str_change_4month)
+
+t.test(bl_post_wide$CPA_str_change_2month)
+t.test(bl_post_wide$CPA_str_change_4month)
 
 #Brain attributions baseline
 summary_func(bl_post_wide$CPA_brain_Baseline, bl_post_wide$`CPA_brain_2 month follow-up`,
              bl_post_wide$`CPA_brain_4 month follow-up`, bl_post_wide$CPA_brain_change_2month,
              bl_post_wide$CPA_brain_change_4month)
 
+t.test(bl_post_wide$CPA_brain_change_2month)
+t.test(bl_post_wide$CPA_brain_change_4month)
+
+#Global impression of change 
+table(bl_post_wide$`gic2_2 month follow-up`)
+table(bl_post_wide$`gic2a_2 month follow-up`)
+table(bl_post_wide$`gic2b_2 month follow-up`)
+
+#Correlations between changes in select variables and outcomes 
+other_vars_df <- data.frame(
+  promis_general = bl_post_wide$promis_general_change_2month,
+  promis_quality = bl_post_wide$promis_quality_change_2month,
+  promis_physical = bl_post_wide$promis_physical_change_2month,
+  promis_mental = bl_post_wide$promis_mental_change_2month,
+  depression = bl_post_wide$depression_change_2month,
+  anxiety = bl_post_wide$anxiety_change_2month,
+  kinesophobia = bl_post_wide$kinesophobia_change_2month,
+  painconcern = bl_post_wide$painconcern_change_2month,
+  engagement = bl_post_wide$engagement_change_2month,
+  CPA_str = bl_post_wide$CPA_str_change_2month,
+  CPA_brain = bl_post_wide$CPA_brain_change_2month
+)
+
+target_var <- bl_post_wide$peg_change_2month
+
+get_cor_with_ci <- function(x, y) {
+  test_result <- cor.test(x, y, use = "complete.obs")
+  return(c(
+    correlation = test_result$estimate,
+    lower_ci = test_result$conf.int[1],
+    upper_ci = test_result$conf.int[2]
+  ))
+}
+
+
+correlation_results <- data.frame(
+  variable = names(other_vars_df),
+  t(sapply(other_vars_df, function(x) get_cor_with_ci(x, target_var)))
+)
+
+print(correlation_results)
+
+
+
+
+###----------------------------------------------------------------------------------------------
+#Cohort differences in PEG and other outcomes 
+reg_treatment <- bl_post_wide %>% 
+  filter(cohort == "Cohort 1" | cohort == "Cohort 2")
+
+improv_treatment <- bl_post_wide %>% 
+  filter(cohort == "Cohort 3" | cohort == "Cohort 4")
+
+summary_func(reg_treatment$peg_Baseline, reg_treatment$`peg_2 month follow-up`, 
+             reg_treatment$`peg_4 month follow-up`, reg_treatment$peg_change_2month, 
+             reg_treatment$peg_change_4month)
+
+summary_func(improv_treatment$peg_Baseline, improv_treatment$`peg_2 month follow-up`, 
+             improv_treatment$`peg_4 month follow-up`, improv_treatment$peg_change_2month, 
+             improv_treatment$peg_change_4month)
+
+t.test(reg_treatment$peg_change_2month)
+t.test(improv_treatment$peg_change_2month)
+
+t.test(reg_treatment$peg_change_4month)
+t.test(improv_treatment$peg_change_4month)
+
+#Treatment satisfaction in different cohorts 
+table(reg_treatment$`gic2_2 month follow-up`)
+table(improv_treatment$`gic2_2 month follow-up`)
+
+table(reg_treatment$`gic2_4 month follow-up`)
+table(improv_treatment$`gic2_4 month follow-up`)
+
+table(reg_treatment$`gic2a_2 month follow-up`)
+table(improv_treatment$`gic2a_2 month follow-up`)
+
+table(reg_treatment$`gic2a_4 month follow-up`)
+table(improv_treatment$`gic2a_4 month follow-up`)
+
+table(reg_treatment$`gic2b_2 month follow-up`)
+table(improv_treatment$`gic2b_2 month follow-up`)
+
+table(reg_treatment$`gic2b_4 month follow-up`)
+table(improv_treatment$`gic2b_4 month follow-up`)
+
 ###----------------------------------------------------------------------------------------------
 #Looking at half reduction, thrid reduction, and pain free
 bl_post_wide <- bl_post_wide %>% 
-  mutate(pegofone = ifelse(`peg_2 month follow-up` <= 1, "Yes", "No")) %>%
-  mutate(halfreduction = ifelse(`peg_2 month follow-up` <= (0.5 * peg_Baseline), "Yes", "No")) %>% 
   mutate(thirdreduction = ifelse(`peg_2 month follow-up` <= (0.70 * peg_Baseline), "Yes", "No")) %>% 
-  mutate(halfreduction_intensity = ifelse(`intensity_2 month follow-up` <= (0.5*intensity_Baseline), "Yes", "No")) %>% 
-  mutate(thirdreduction_intensity = ifelse(`intensity_2 month follow-up` <= (0.7*intensity_Baseline),"Yes","No")) %>% 
-  mutate(painofone = ifelse(`intensity_2 month follow-up` <= 1, "Yes", "No"))
-
-
-table(bl_post_wide$thirdreduction_intensity)
-prop.table(table(bl_post_wide$thirdreduction_intensity))
-
-table(bl_post_wide$painofone)
-prop.table(table(bl_post_wide$painofone))
-
-
-table(bl_post_wide$halfreduction_intensity)
-prop.table(table(bl_post_wide$halfreduction_intensity))
+  mutate(thirdreduction_fu = ifelse(`peg_4 month follow-up` <= (0.70 * peg_Baseline), "Yes", "No"))
 
 table(bl_post_wide$thirdreduction)
 prop.table(table(bl_post_wide$thirdreduction))
 
 
-table(bl_post_wide$pegofone)
-prop.table(table(bl_post_wide$pegofone))
-
-###----------------------------------------------------------------------------------------------
-
-#Modeling with mixed effect models
-
-#Setting up the data set by restricting to time points of interest and coding them as factor variables
-#and also standardizing the outcome score 
-
-ESPRIT_mixed <- ESPRIT_full %>% 
-  filter(`Event Name` %in% c("Baseline", "2 month follow-up", "4 month follow-up")) %>% 
-  mutate(timepoint = case_when(
-    `Event Name` == "Baseline" ~ 0,
-    `Event Name` == "2 month follow-up" ~ 1, 
-    `Event Name` == "4 month follow-up" ~ 2
-  )) %>% 
-  mutate(timepoint = factor(timepoint, levels=c(0, 1, 2))) %>% 
-  mutate(across(where(is.numeric), ~scale(.)[,1], .names = "{.col}_z"))
-
-#PRIMARY OUTCOMES: PEG and Pain Intensity Item. Looking at both standardized and non-standardized outcomes
-peg_effect <- lmer(peg ~ timepoint + fg_change +  timepoint*fg_change + 
-                (1|cohort:ids), data = ESPRIT_mixed)
-summary(peg_effect)
-
-confint(peg_effect)
-
-peg_z_effect <- lmer(peg_z ~ timepoint + fg_change +  timepoint*fg_change + 
-                       (1|cohort:ids), data = ESPRIT_mixed)
-
-summary(peg_z_effect)
-
-confint(peg_z_effect)
-
-
-intensity_effect <- lmer(intensity  ~ timepoint + fg_change +  timepoint*fg_change + 
-                           (1|cohort:ids), data = ESPRIT_mixed)
-summary(intensity_effect)
-
-confint(intensity_effect)
-
-intensity_effect_z <- lmer(intensity_z  ~ timepoint + fg_change +  timepoint*fg_change + 
-                             (1|cohort:ids), data = ESPRIT_mixed)
-
-summary(intensity_effect_z)
-
-confint(intensity_effect_z)
-
-
-###Only doing standardized outcomes from here on out
-#PROMIS Global Health
-promis_GH <- lmer(promis_global01_num_z ~ timepoint + fg_change +  timepoint*fg_change + 
-                    (1|cohort:ids), data = ESPRIT_mixed)
-
-summary(promis_GH)
-
-#PROMIS Quality 
-promis_quality <- lmer(promis_global02_num_z ~ timepoint + fg_change +  timepoint*fg_change + 
-                          (1|cohort:ids), data = ESPRIT_mixed)
-summary(promis_quality)
-
-#PROMIS Phsyical
-ESPRIT_mixed$promis_physical_z
-
-promis_physical <- lmer(promis_physical_z ~ timepoint + fg_change +  timepoint*fg_change + 
-                          (1|cohort:ids), data = ESPRIT_mixed)
-summary(promis_physical)
-
-confint(promis_physical)
-
-#PROMIS Mental 
-ESPRIT_mixed$promis_mental_z
-
-promis_mental <- lmer(promis_mental_z ~ timepoint + fg_change +  timepoint*fg_change + 
-                        (1|cohort:ids), data = ESPRIT_mixed)
-
-summary(promis_mental)
-
-#Depression 
-ESPRIT_mixed$depression_z
-
-depression <- lmer(depression_z ~ timepoint + fg_change +  timepoint*fg_change + 
-                     (1|cohort:ids), data = ESPRIT_mixed)
-
-summary(depression)
-
-confint(depression)
-
-#Anxiety 
-ESPRIT_mixed$anxiety_z
-
-anxiety <- lmer(anxiety_z ~ timepoint + fg_change +  timepoint*fg_change + 
-                  (1|cohort:ids), data = ESPRIT_mixed)
-
-summary(anxiety)
-confint(anxiety)
-
-#Kinesophobia
-
-kinesophobia <- lmer(kinesophobia_z ~ timepoint + fg_change +  timepoint*fg_change + 
-                       (1|cohort:ids), data = ESPRIT_mixed)
-
-summary(kinesophobia)
-
-confint(kinesophobia)
-
-#Concern about pain 
-ESPRIT_mixed$painconcern_z
-
-painconcern <- lmer(painconcern_z ~ timepoint + fg_change +  timepoint*fg_change + 
-                      (1|cohort:ids), data = ESPRIT_mixed)
-
-summary(painconcern)
-
-confint(painconcern)
-
-#Life engagement
-ESPRIT_mixed$engagement_z
-
-engagement <- lmer(engagement_z ~ timepoint + fg_change +  timepoint*fg_change + 
-                     (1|cohort:ids), data = ESPRIT_mixed)
-
-summary(engagement)
-
-#WPI
-ESPRIT_mixed$WPI_z
-
-WPI <- lmer(WPI_z ~ timepoint + fg_change +  timepoint*fg_change + 
-              (1|cohort:ids), data = ESPRIT_mixed)
-
-summary(WPI)
-
-total_pain_sites <- lmer(total_pain_sites_z ~ timepoint + fg_change +  timepoint*fg_change + 
-                           (1|cohort:ids), data = ESPRIT_mixed)
-
-summary(total_pain_sites)
-
-
-
-#Opioid difficulty 
-ESPRIT_mixed$opioid_z
-
-opioid <- lmer(opioid_z ~ timepoint + fg_change +  timepoint*fg_change + 
-                 (1|cohort:ids), data = ESPRIT_mixed)
-
-summary(opioid)
-
-#Structural attributions 
-ESPRIT_mixed$CPA_str_z
-
-str <- lmer(CPA_str_z ~ timepoint + fg_change +  timepoint*fg_change + 
-              (1|cohort:ids), data = ESPRIT_mixed)
-
-summary(str)
-
-confint(str)
-
-#Brain attributions 
-brain <- lmer(CPA_brain_z ~ timepoint + fg_change +  timepoint*fg_change + 
-                (1|cohort:ids), data = ESPRIT_mixed)
-
-summary(brain)
-confint(brain)
-
-
-###-----------------------------------------------------------------------------
-#Looking at potential mechanisms (kinesophobia and attributions)
-
-#Structural attributions
-strattr <- lmer(peg ~ timepoint + CPA_str + timepoint*CPA_str + fg_change*CPA_str +
-                     (1|cohort:ids), data=ESPRIT_mixed)
-summary(strattr)
-
-confint(strattr)
-
-#Brain attributions
-brainattr <- lmer(peg ~ timepoint + CPA_brain + timepoint*CPA_brain + fg_change*CPA_brain +
-                       (1|cohort:ids), data=ESPRIT_mixed)
-summary(brainattr)
-
-confint(brainattr)
-
-
-#Kinesophobia
-kin <- lmer(peg ~ timepoint + kinesophobia + timepoint*kinesophobia + fg_change*kinesophobia +
-                 (1|cohort:ids), data=ESPRIT_mixed)
-summary(kin)
-
-confint(kin)
+table(bl_post_wide$thirdreduction_fu)
+prop.table(table(bl_post_wide$thirdreduction_fu))
 
 ###--------------------------------------------------------------------------------------
 #Attendance data (looking at avg number of attended sessions)
