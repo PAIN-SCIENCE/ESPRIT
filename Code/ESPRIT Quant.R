@@ -25,9 +25,23 @@ ESPRIT <- ESPRIT_unedited %>%
          employ = `What is your employment status?`,
          married = `What is your current marital status?`, 
          ids = `Record ID`, 
-         suicide = `Have you tried to hurt or kill yourself in the past five years? (This includes non-suicidal self-harm, such as cutting yourself on purpose. If you have intentionally hurt yourself in the past five years, please answer yes).`)
+         suicide = `Have you tried to hurt or kill yourself in the past five years? (This includes non-suicidal self-harm, such as cutting yourself on purpose. If you have intentionally hurt yourself in the past five years, please answer yes).`, 
+         acupuncture = `Acupuncture: stimulation of specific points of the body with thin needles`,
+         chiropractic = `Chiropractic: hands on adjustment of spine and joints`,
+         massage = `Massage therapy: hands on pressure, rubbing, or manipulation of muscles and soft tissues`,
+         psych_therapy = `Cognitive, behavioral or psychological therapy: one-on-one or group talk therapy by a psychologist or other mental health provider`,
+         meditation = `Meditation or mindfulness practice: use of focused attention and non-judgmental awareness including Mindfulness Based Stress Reduction (MBSR)`,
+         relaxation_tech = `Relaxation techniques: breathing techniques, guided imagery, or progressive muscle relaxation`,
+         yoga = `Yoga: practices that combine physical postures, breathing techniques, and mental focus`,
+         taichi = `Tai Chi: combined practice of slow movements, coordinated breathing, and mental focus`,
+         cannabis = `Cannabis products or marijuana: used for pain (not for recreational or social reasons)`,
+         stretching = `Stretching/strengthening exercise: exercise with stretches or weights on your own, in a group, or directed by a physical therapist or trainer`,
+         aerobics = `Aerobic exercise: activities such as walking, swimming or aerobics on your own, in a group, or directed by a physical therapist or trainer`, 
+         currently_rx_opioid = `Are you currently prescribed an opioid medication for daily or near-daily use for chronic pain?`
+         ) 
 
-
+table(ESPRIT$acupuncture)
+###---------------------------------------------------------------------------
 #Descrpitive statistics 
 
 # First, create a separate dataframe with just the pain ratings from Baseline
@@ -63,7 +77,9 @@ demographic_info <- ESPRIT %>%
     PTSD = `Which if any of the following have you ever been diagnosed with? (choice=Post-traumatic stress disorder (PTSD))`,
     bp_history = `How long has back or neck pain been an ongoing problem for you (in years)?`
   ) %>% 
-  select(ids, age, gender, race, hispanic, edu, married, employ, suicide, depression, anxiety, schizo, bipolar, SUD, PTSD, bp_history,
+  select(ids, age, gender, race, hispanic, edu, married, employ, suicide, depression, anxiety, schizo, bipolar, SUD, PTSD, bp_history, acupuncture,
+         chiropractic, massage, psych_therapy, meditation, relaxation_tech, yoga, taichi, cannabis, stretching, 
+         aerobics, currently_rx_opioid,
          `Enrollment Status`)
 
 
@@ -71,7 +87,7 @@ demographic_info <- ESPRIT %>%
 baseline_wide <- demographic_info %>%
   left_join(baseline_pain, by = "ids") %>% 
   drop_na(intensity) %>% 
-  slice(-1) %>% 
+  slice(-1) %>% #row 1 is a test record 
   mutate(peg = (intensity+ enjoyment + activity)/3)
 
 baseline_wide <- baseline_wide %>% 
@@ -84,51 +100,27 @@ baseline_wide$any_mental <- ifelse(rowSums(baseline_wide[, c("depression_num", "
                                                              "SUD_num", "PTSD_num")],
                                            na.rm=TRUE) > 0, "yes", "no")
 
-table(baseline_wide$`Enrollment Status`)
+#Function to print tables for cat. variables
+print_stats <- function(data, var) {
+  cat("\n=== ", var, " ===\n", sep = "")
+  tbl <- table(data[[var]])
+  prop_tbl <- prop.table(tbl)
+  
+  print(tbl)
+  cat("\nProportions:\n")
+  print(prop_tbl)
+}
 
-table(baseline_wide$suicide)
+cat_vars <- c("suicide", "any_mental", "depression", "anxiety", "schizo", 
+              "bipolar", "SUD", "PTSD", "gender", "race", "hispanic", 
+              "edu", "married", "employ", "Enrollment Status", "suicide")
 
-table(baseline_wide$any_mental)
-prop.table(table(baseline_wide$any_mental))
-
-table(baseline_wide$depression)
-prop.table(table(baseline_wide$depression))
-table(baseline_wide$anxiety)
-prop.table(table(baseline_wide$anxiety))
-table(baseline_wide$schizo)
-prop.table(table(baseline_wide$schizo))
-table(baseline_wide$bipolar)
-prop.table(table(baseline_wide$bipolar))
-table(baseline_wide$SUD)
-prop.table(table(baseline_wide$SUD))
-table(baseline_wide$PTSD)
-prop.table(table(baseline_wide$PTSD))
-
+invisible(lapply(cat_vars, function(v) print_stats(baseline_wide, v)))
 
 summary(baseline_wide$age)
 sd(baseline_wide$age, na.rm = TRUE)
-
-table(baseline_wide$gender)
-prop.table(table(baseline_wide$gender))
-
-table(baseline_wide$race)
-prop.table(table(baseline_wide$race))
-
-table(baseline_wide$hispanic)
-prop.table(table(baseline_wide$hispanic))
-
-table(baseline_wide$edu)
-prop.table(table(baseline_wide$edu))
-
-table(baseline_wide$married)
-prop.table(table(baseline_wide$married))
-
-table(baseline_wide$employ)
-prop.table(table(baseline_wide$employ))
-
-
-summary(baseline_wide$intensity)
-sd(baseline_wide$intensity, na.rm = TRUE)
+summary(baseline_wide$peg)
+sd(baseline_wide$peg, na.rm = TRUE)
 
 print(baseline_wide$ids)
 
@@ -139,7 +131,23 @@ baseline_wide$bp_history[baseline_wide$bp_history == 2002] <- 23
 summary(baseline_wide$bp_history)
 sd(baseline_wide$bp_history, na.rm=TRUE)
 
+###---------------------------------------------------------------------------
+#Statistics for concomintant interventions and baseline opioid use 
+table(ESPRIT$`Event Name`)
 
+baseline_interventions <- ESPRIT %>% 
+  filter(`Event Name` == "Baseline") %>% 
+  slice(-1) %>% #row 1 is a test record
+  select(ids, acupuncture, massage, chiropractic, psych_therapy, meditation, relaxation_tech, yoga, taichi, cannabis, 
+         stretching, aerobics, currently_rx_opioid)
+
+cat_vars <- c("acupuncture", "massage", "chiropractic", "psych_therapy", "meditation", "relaxation_tech", 
+              "yoga", "taichi", "cannabis", 
+              "stretching", "aerobics", "currently_rx_opioid")
+
+invisible(lapply(cat_vars, function(v) print_stats(baseline_interventions, v)))
+
+###---------------------------------------------------------------------------
 #Creating cohort and cohort grouping variables
 ESPRIT_full <- ESPRIT %>% 
   mutate(cohort = case_when(
@@ -542,6 +550,8 @@ ESPRIT_full <- ESPRIT_full %>%
 
 summary(ESPRIT_full$gic2_num)
 
+
+
 ###----------------------------------------------------------------------------
 #Chronic pain attributions 
 
@@ -550,12 +560,15 @@ ESPRIT_full <- ESPRIT_full %>%
          CPA_str = `To what extent do you believe your pain is or was due to structural issues in your body?...141`)
 
 
+
 ###----------------------------------------------------------------------------
 #Making dataset that is just baseline values and post-treatment values 
 
 bl_post <- ESPRIT_full %>% 
   filter(`Event Name` %in% c("Eligibility and Consent", "2 month follow-up", "Baseline", 
                              "4 month follow-up"))
+
+#And making a dataset that is just baseline values
 
 
 
@@ -674,6 +687,18 @@ bl_post_wide$painsite_4_month_followup <- rowSums(bl_post_wide[, c("shoulder_gir
 bl_post_wide$painsite_change_2_month <- bl_post_wide$painsite_Baseline - bl_post_wide$painsite_2_month_followup
 
 bl_post_wide$painsite_change_4_month <- bl_post_wide$painsite_Baseline - bl_post_wide$painsite_4_month_followup
+
+#Checking to see demographics of who attended focus groups. 
+#Participants who attended focus groups are: 2, 7, 8, 10, 15, 16, 18, 24, 4, 13, 26, 28, 30, 22, 48, 17, 57, 61, 
+# 62, 51, 64, 59, 67, 45, 20, 44, 29, 65 
+
+fg_ids <- c(2, 7, 8, 10, 15, 16, 18, 24, 4, 13, 26, 28, 30, 22, 48, 17, 57, 61, 
+            62, 51, 64, 59, 67, 45, 20, 44, 29, 65 )
+
+fg_attendees <- bl_post_wide %>%
+  filter(ids %in% fg_ids)
+
+
 
 ###-----------------------------------------------------------------------------
 #How many people completed post-treatment and 2-month follow-up
