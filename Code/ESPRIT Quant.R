@@ -3,13 +3,6 @@ library(tidyverse)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
-library(patchwork)
-library(performance)
-library(lme4)
-library(lmerTest)
-library(car)
-library(effsize)
-library(effectsize)
 
 
 ESPRIT_unedited <- read_excel("/Users/zanwynia/Desktop/Datasets/ESPRIT_labels.xlsx")
@@ -40,7 +33,7 @@ ESPRIT <- ESPRIT_unedited %>%
          currently_rx_opioid = `Are you currently prescribed an opioid medication for daily or near-daily use for chronic pain?`
          ) 
 
-table(ESPRIT$acupuncture)
+
 ###---------------------------------------------------------------------------
 #Descrpitive statistics 
 
@@ -285,13 +278,59 @@ ESPRIT_full <- ESPRIT_full %>%
     promis_global06_num = not_at_all[promis_global06_num], 
     promis_global08_num = severity[promis_global08_num],
     promis_global10_num = frequency[promis_global10_num]
+  ) %>% 
+  rename(promis_globalhealth = promis_global01_num,
+         promis_socialactivity = promis_global09_num) %>% 
+  mutate(promis_global_07r = case_when(
+    intensity == 0 ~ 5, 
+    intensity >= 1 & intensity <= 3 ~ 4, 
+    intensity >= 4 & intensity <= 6 ~ 3, 
+    intensity >= 7 & intensity <= 9 ~ 2, 
+    intensity == 10 ~ 1
+  )) %>% 
+  mutate( #using PROMIS global health scoring manual to convert raw scores to T scores 
+    promis_physical_raw = promis_global03_num + promis_global06_num + promis_global08_num + promis_global_07r, 
+    promis_mental_raw = promis_global04_num + promis_global05_num + promis_global10_num + promis_global02_num, 
+    promis_physical_Tscore = case_when( 
+      promis_physical_raw == 4 ~ 16.2, 
+      promis_physical_raw == 5 ~ 19.9, 
+      promis_physical_raw == 6 ~ 23.5, 
+      promis_physical_raw == 7 ~ 26.7, 
+      promis_physical_raw == 8 ~ 29.6, 
+      promis_physical_raw == 9 ~ 32.4, 
+      promis_physical_raw == 10 ~ 34.9, 
+      promis_physical_raw == 11 ~ 37.4, 
+      promis_physical_raw == 12 ~ 39.8, 
+      promis_physical_raw == 13 ~ 42.3, 
+      promis_physical_raw == 14 ~ 44.9, 
+      promis_physical_raw == 15 ~ 47.7, 
+      promis_physical_raw == 16 ~ 50.8, 
+      promis_physical_raw == 17 ~ 54.1, 
+      promis_physical_raw == 18 ~ 57.7, 
+      promis_physical_raw == 19 ~ 61.9, 
+      promis_physical_raw == 20 ~ 67.7
+    ), 
+    promis_mental_Tscore = case_when(
+      promis_mental_raw == 4 ~ 21.2, 
+      promis_mental_raw == 5 ~ 25.1, 
+      promis_mental_raw == 6 ~ 28.4, 
+      promis_mental_raw == 7 ~ 31.3, 
+      promis_mental_raw == 8 ~ 33.8, 
+      promis_mental_raw == 9 ~ 36.3, 
+      promis_mental_raw == 10 ~ 38.8, 
+      promis_mental_raw == 11 ~ 41.1, 
+      promis_mental_raw == 12 ~ 43.5, 
+      promis_mental_raw == 13 ~ 45.8, 
+      promis_mental_raw == 14 ~ 48.3, 
+      promis_mental_raw == 15 ~ 50.8, 
+      promis_mental_raw == 16 ~ 53.3, 
+      promis_mental_raw == 17 ~ 56.0, 
+      promis_mental_raw == 18 ~ 59.0, 
+      promis_mental_raw == 19 ~ 62.5, 
+      promis_mental_raw == 20 ~ 67.6
+    )
   )
 
-
-
-ESPRIT_full$promis_physical <- ESPRIT_full$promis_global03_num + ESPRIT_full$promis_global06_num + ESPRIT_full$promis_global08_num
-
-ESPRIT_full$promis_mental <- ESPRIT_full$promis_global04_num + ESPRIT_full$promis_global05_num + ESPRIT_full$promis_global09_num + ESPRIT_full$promis_global10_num
 
 
 #PHQ-8
@@ -568,17 +607,14 @@ bl_post <- ESPRIT_full %>%
   filter(`Event Name` %in% c("Eligibility and Consent", "2 month follow-up", "Baseline", 
                              "4 month follow-up"))
 
-#And making a dataset that is just baseline values
-
-
 
 #Making a wide dataset for change scores
 bl_post_wide <- bl_post %>% 
   pivot_wider(
     id_cols = c(ids, cohort, fg_change),
     names_from = `Event Name`,
-    values_from = c(peg, promis_physical, promis_mental, 
-                    promis_global01_num, promis_global02_num, kinesophobia, 
+    values_from = c(peg, promis_physical_Tscore, promis_mental_Tscore,  
+                    promis_globalhealth, promis_socialactivity, kinesophobia, 
                     opioid, depression, anxiety, engagement, painconcern, intensity, gic2a, gic2b, gic2, age, 
                     race, gender, hispanic, activity, enjoyment, edu, employ, married, shoulder_girdle_left, 
                     shoulder_girdle_right, upper_arm_left, upper_arm_right, lower_arm_left, lower_arm_right, 
@@ -587,9 +623,9 @@ bl_post_wide <- bl_post %>%
   )
 
 bl_post_wide <- bl_post_wide %>% 
-  select(-`peg_Eligibility and Consent`, -`promis_physical_Eligibility and Consent`, 
-         -`promis_mental_Eligibility and Consent`, -`promis_global01_num_Eligibility and Consent`,
-         -`promis_global02_num_Eligibility and Consent`, -`kinesophobia_Eligibility and Consent`, 
+  select(-`peg_Eligibility and Consent`, -`promis_physical_Tscore_Eligibility and Consent`, 
+         -`promis_mental_Tscore_Eligibility and Consent`, -`promis_globalhealth_Eligibility and Consent`,
+         -`promis_socialactivity_Eligibility and Consent`, -`kinesophobia_Eligibility and Consent`, 
          -`opioid_Eligibility and Consent`, -`depression_Eligibility and Consent`, -`anxiety_Eligibility and Consent`,
          -`engagement_Eligibility and Consent`, -`painconcern_Eligibility and Consent`, -`intensity_Eligibility and Consent`,
          -age_Baseline, -`age_2 month follow-up`, -race_Baseline, -`race_2 month follow-up`, 
@@ -627,14 +663,14 @@ bl_post_wide<-bl_post_wide %>%
   mutate(
     peg_change_2month = peg_Baseline - `peg_2 month follow-up`,
     peg_change_4month = peg_Baseline - `peg_4 month follow-up`,
-    promis_physical_change_2month = `promis_physical_2 month follow-up` - promis_physical_Baseline,
-    promis_physical_change_4month = `promis_physical_4 month follow-up` - promis_physical_Baseline,
-    promis_mental_change_2month = `promis_mental_2 month follow-up` - promis_mental_Baseline,
-    promis_mental_change_4month = `promis_mental_4 month follow-up` - promis_mental_Baseline,
-    promis_general_change_2month = `promis_global01_num_2 month follow-up` - promis_global01_num_Baseline,
-    promis_general_change_4month = `promis_global01_num_4 month follow-up` - promis_global01_num_Baseline,
-    promis_quality_change_2month = `promis_global02_num_2 month follow-up` - promis_global02_num_Baseline,
-    promis_quality_change_4month = `promis_global02_num_4 month follow-up` - promis_global02_num_Baseline,
+    promis_physical_Tscore_change_2month = `promis_physical_Tscore_2 month follow-up` - promis_physical_Tscore_Baseline,
+    promis_physical_Tscore_change_4month = `promis_physical_Tscore_4 month follow-up` - promis_physical_Tscore_Baseline,
+    promis_mental_Tscore_change_2month = `promis_mental_Tscore_2 month follow-up` - promis_mental_Tscore_Baseline,
+    promis_mental_Tscore_change_4month = `promis_mental_Tscore_4 month follow-up` - promis_mental_Tscore_Baseline,
+    promis_globalhealth_change_2month = `promis_globalhealth_2 month follow-up` - promis_globalhealth_Baseline,
+    promis_global_change_4month = `promis_globalhealth_4 month follow-up` - promis_globalhealth_Baseline,
+    promis_socialactivity_change_2month = `promis_socialactivity_2 month follow-up` - promis_socialactivity_Baseline,
+    promis_socialactivity_change_4month = `promis_socialactivity_4 month follow-up` - promis_socialactivity_Baseline,
     kinesophobia_change_2month = kinesophobia_Baseline - `kinesophobia_2 month follow-up`,
     kinesophobia_change_4month = kinesophobia_Baseline - `kinesophobia_4 month follow-up`,
     opioid_change_2month = opioid_Baseline - `opioid_2 month follow-up`,
@@ -713,27 +749,22 @@ fourmonthcomplete <- bl_post_wide %>%
 ###----------------------------------------------------------------------------------------------
 #Baseline and post treatment values with change scores 
 
-#Function to print values
 summary_func <- function(a, b, c, d, e){
-  # Create a logical vector for complete cases across all variables
-  complete_cases <- complete.cases(a, b, c, d, e)
   
   print("Baseline:")
-  print(c(summary(a[complete_cases]), "SD" = sd(a[complete_cases], na.rm=TRUE)))
+  print(c(summary(a), "SD" = sd(a, na.rm=TRUE), "N" = sum(!is.na(a))))
   
   print("Post Treatment:")
-  print(c(summary(b[complete_cases]), "SD" = sd(b[complete_cases], na.rm=TRUE)))
+  print(c(summary(b), "SD" = sd(b, na.rm=TRUE), "N" = sum(!is.na(b))))
   
   print("2-Month Follow-up:")
-  print(c(summary(c[complete_cases]), "SD" = sd(c[complete_cases], na.rm=TRUE)))
+  print(c(summary(c), "SD" = sd(c, na.rm=TRUE), "N" = sum(!is.na(c))))
   
   print("Change to Post-treatment:")
-  print(c(summary(d[complete_cases]), "SD" = sd(d[complete_cases], na.rm=TRUE)))
+  print(c(summary(d), "SD" = sd(d, na.rm=TRUE), "N" = sum(!is.na(d))))
   
   print("Change to 2-Month Follow-up:")
-  print(c(summary(e[complete_cases]), "SD" = sd(e[complete_cases], na.rm=TRUE)))
-  
-  print(paste("Number of complete cases:", sum(complete_cases)))
+  print(c(summary(e), "SD" = sd(e, na.rm=TRUE), "N" = sum(!is.na(e))))
 }
 
 #PEG
@@ -741,42 +772,41 @@ summary_func(bl_post_wide$peg_Baseline, bl_post_wide$`peg_2 month follow-up`,
              bl_post_wide$`peg_4 month follow-up`, bl_post_wide$peg_change_2month, 
              bl_post_wide$peg_change_4month)
 
-summary(bl_post_wide$peg_change_2month)
 
-t.test(bl_post_wide$peg_change_2month, conf.level = 0.95)$conf.int
-t.test(bl_post_wide$peg_change_4month, conf.level = 0.95)$conf.int
+t.test(bl_post_wide$peg_change_2month, conf.level = 0.95)
+t.test(bl_post_wide$peg_change_4month, conf.level = 0.95)
 
 #PROMIS Global Health post-treatment
-summary_func(bl_post_wide$promis_global01_num_Baseline, bl_post_wide$`promis_global01_num_2 month follow-up`, 
-             bl_post_wide$`promis_global01_num_4 month follow-up`, bl_post_wide$promis_general_change_2month,
-             bl_post_wide$promis_general_change_4month)
+summary_func(bl_post_wide$promis_globalhealth_Baseline, bl_post_wide$`promis_globalhealth_2 month follow-up`, 
+             bl_post_wide$`promis_globalhealth_4 month follow-up`, bl_post_wide$promis_globalhealth_change_2month,
+             bl_post_wide$promis_global_change_4month)
 
-t.test(bl_post_wide$promis_general_change_2month)
-t.test(bl_post_wide$promis_general_change_4month)
+t.test(bl_post_wide$promis_globalhealth_change_2month)
+t.test(bl_post_wide$promis_global_change_4month)
 
-#PROMIS Quality of life post treatment 
-summary_func(bl_post_wide$promis_global02_num_Baseline, bl_post_wide$`promis_global02_num_2 month follow-up`,
-             bl_post_wide$`promis_global02_num_4 month follow-up`, bl_post_wide$promis_quality_change_2month,
-             bl_post_wide$promis_quality_change_4month)
+#PROMIS Social Activity  
+summary_func(bl_post_wide$promis_socialactivity_Baseline, bl_post_wide$`promis_socialactivity_2 month follow-up`,
+             bl_post_wide$`promis_socialactivity_4 month follow-up`, bl_post_wide$promis_socialactivity_change_2month,
+             bl_post_wide$promis_socialactivity_change_4month)
 
-t.test(bl_post_wide$promis_quality_change_2month)
-t.test(bl_post_wide$promis_quality_change_4month)
+t.test(bl_post_wide$promis_socialactivity_change_2month)
+t.test(bl_post_wide$promis_socialactivity_change_4month)
 
 #PROMIS Physical health post treatment 
-summary_func(bl_post_wide$promis_physical_Baseline, bl_post_wide$`promis_physical_2 month follow-up`,
-             bl_post_wide$`promis_physical_4 month follow-up`, bl_post_wide$promis_physical_change_2month,
-             bl_post_wide$promis_physical_change_4month)
+summary_func(bl_post_wide$promis_physical_Tscore_Baseline, bl_post_wide$`promis_physical_Tscore_2 month follow-up`,
+             bl_post_wide$`promis_physical_Tscore_4 month follow-up`, bl_post_wide$promis_physical_Tscore_change_2month,
+             bl_post_wide$promis_physical_Tscore_change_4month)
 
-t.test(bl_post_wide$promis_physical_change_2month)
-t.test(bl_post_wide$promis_physical_change_4month)
+t.test(bl_post_wide$promis_physical_Tscore_change_2month)
+t.test(bl_post_wide$promis_physical_Tscore_change_4month)
 
 #PROMIS mental health post-treatment
-summary_func(bl_post_wide$promis_mental_Baseline, bl_post_wide$`promis_mental_2 month follow-up`, 
-        bl_post_wide$`promis_mental_4 month follow-up`, bl_post_wide$promis_mental_change_2month,
-        bl_post_wide$promis_mental_change_4month)
+summary_func(bl_post_wide$promis_mental_Tscore_Baseline, bl_post_wide$`promis_mental_Tscore_2 month follow-up`, 
+        bl_post_wide$`promis_mental_Tscore_4 month follow-up`, bl_post_wide$promis_mental_Tscore_change_2month,
+        bl_post_wide$promis_mental_Tscore_change_4month)
 
-t.test(bl_post_wide$promis_mental_change_2month)
-t.test(bl_post_wide$promis_mental_change_4month)
+t.test(bl_post_wide$promis_mental_Tscore_change_2month)
+t.test(bl_post_wide$promis_mental_Tscore_change_4month)
 
 #Depression post treatment
 summary_func(bl_post_wide$depression_Baseline, bl_post_wide$`depression_2 month follow-up`, 
@@ -865,10 +895,10 @@ table(bl_post_wide$`gic2b_2 month follow-up`)
 
 #Correlations between changes in select variables and outcomes 
 other_vars_df <- data.frame(
-  promis_general = bl_post_wide$promis_general_change_2month,
-  promis_quality = bl_post_wide$promis_quality_change_2month,
-  promis_physical = bl_post_wide$promis_physical_change_2month,
-  promis_mental = bl_post_wide$promis_mental_change_2month,
+  promis_globalhealth_change_2month = bl_post_wide$promis_globalhealth_change_2month,
+  promis_socialactivity_change_2month = bl_post_wide$promis_socialactivity_change_2month,
+  promis_physical_Tscore_change_2month = bl_post_wide$promis_physical_Tscore_change_2month,
+  promis_mental_Tscore_change_2month = bl_post_wide$promis_mental_Tscore_change_2month,
   depression = bl_post_wide$depression_change_2month,
   anxiety = bl_post_wide$anxiety_change_2month,
   kinesophobia = bl_post_wide$kinesophobia_change_2month,
