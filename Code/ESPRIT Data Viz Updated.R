@@ -577,7 +577,7 @@ line_function <- function(data, ylab="", title="", legend_pos = ""){
     scale_x_continuous(
       breaks = 1:3,
       labels=c("Baseline", "Post-tx", "FU")
-    )
+    ) + expand_limits(y=0)
 }
 
 #Did PEG split by group instead of cohort, the rest of the secondary outcomes right now are split by cohort
